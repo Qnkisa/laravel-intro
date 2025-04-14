@@ -20,9 +20,6 @@ class Profile extends Model implements AuthenticatableContract
         "phone"
     ];
 
-    public function setPasswordAttribute($pass) {
-        $this -> attributes["password"] = Hash::make($pass);
-    }
     protected $hidden = [
         'password'
     ];
