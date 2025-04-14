@@ -6,7 +6,7 @@ use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -46,7 +46,10 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
 
         // Check if the user exists
         $user = Profile::where('email', $credentials['email'])->first();
@@ -55,25 +58,31 @@ class AuthController extends Controller
         }
 
         // Check the password with Hash::check
-        if (!Hash::check($credentials['password'], $user->password)) {
-            return response()->json(['message' => 'Wrong password'], 401);
-        }
-        dd(session()->all());
-        // Attempt to log in using the email and password
-        if (Auth::guard('web')->attempt($credentials)) {
-            $request->session()->regenerate();
-            return response()->json(['message' => 'User logged in successfully'], 200);
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
         }
 
-        return response()->json(['message' => 'Something else went wrong'], 500);
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            'token' => $token,
+            'user' => $user,
+        ]);
     }
 
-    public function logout(Request $request){
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+    public function logout(Request $request)
+    {
+        $user = $request->user();
 
-        return response()->json(['message' => 'Logged out']);
+        // Delete the token that was used to authenticate the request
+        $user->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ]);
     }
 
     public function me(Request $request){
