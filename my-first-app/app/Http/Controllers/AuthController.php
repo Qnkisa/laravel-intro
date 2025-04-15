@@ -32,18 +32,6 @@ class AuthController extends Controller
 
     }
 
-    // public function login(Request $request){
-    //     $credentials = $request->only('email','password');
-
-    //     if(Auth::guard('web')->attempt($credentials)){
-    //         $request->session()->regenerate();
-
-    //         return response()->json(['message' => 'User logged in successfully'],201);
-    //     }
-        
-    //     return response()->json(['message' => 'Invalid credentials'], 401);
-    // }
-
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -77,15 +65,30 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        // Delete the token that was used to authenticate the request
-        $user->currentAccessToken()->delete();
+        if ($user && $user->currentAccessToken()) {
+            $user->currentAccessToken()->delete();
+        }
+
+        // Remove the cookie from the browser
+        $cookie = \Cookie::forget('auth_token');
 
         return response()->json([
             'message' => 'Logged out successfully'
-        ]);
+        ])->withCookie($cookie);
     }
 
     public function me(Request $request){
-        return response()->json(Auth::user());
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated.'
+            ], 401);
+        }
+    
+        return response()->json([
+            'message' => 'Authenticated user retrieved successfully',
+            'user' => $user
+        ]);
     }
 }
