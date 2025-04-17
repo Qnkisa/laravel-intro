@@ -40,7 +40,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'User registered successfully',
             'user' => $user // Return user info if needed in frontend
-        ], 201); // 201 Created
+        ], 200); // 201 Created
     }
 
     public function login(Request $request)
@@ -57,7 +57,7 @@ class AuthController extends Controller
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json([
                 'message' => 'Invalid credentials'
-            ], 401); // 401 Unauthorized
+            ], 400); // 401 Unauthorized
         }
 
         
@@ -89,7 +89,7 @@ class AuthController extends Controller
                     'Default Auth Guard' => Auth::check(),
                     'User via request()->user()' => null,
                 ],
-            ], 401);
+            ], 400);
         }
 
         $token = $user->currentAccessToken();
@@ -116,7 +116,7 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json([
                 'message' => 'Unauthenticated.'
-            ], 401); 
+            ], 400); 
         }
 
         return response()->json([
